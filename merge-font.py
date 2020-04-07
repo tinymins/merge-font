@@ -69,8 +69,10 @@ def merge_font(base_file, merge_file, merge_cp_map, out_file):
   for glyph in base_glyph_order.findall('GlyphID'):
     base_glyph_order_max = max(base_glyph_order_max, int(glyph.attrib['id']))
 
-  for src_code in merge_cp_map:
-    dst_code = merge_cp_map[src_code]
+  for dst_code in merge_cp_map:
+    src_code = merge_cp_map[dst_code]
+    if dst_code == src_code:
+      continue
     if dst_code > MAX_CODE:
       continue
     src_code = '%04x' % src_code
@@ -170,7 +172,7 @@ if __name__ == "__main__":
       os.remove(output_filename + '.ttx')
     if os.path.exists(output_filename + '.ttf'):
       os.remove(output_filename + '.ttf')
-    merge_font(base_filename + '.ttx', merge_filename + '.ttx', zh2Hans if argv[2] == 'zh2Hans' else zh2Hant, output_filename + '.ttx')
+    merge_font(base_filename + '.ttx', merge_filename + '.ttx', zh2Hans if argv[2] == 'zh2Hant' else zh2Hant, output_filename + '.ttx')
 
     print('--------------------------------------------------')
     print('Prepare for parsing output font file...')
