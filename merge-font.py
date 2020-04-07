@@ -146,7 +146,7 @@ if __name__ == "__main__":
   else:
     base_path = argv[0]
     base_filename, base_fileext = os.path.splitext(base_path)
-    if base_fileext.lower() != 'ttx':
+    if base_fileext.lower() != '.ttx':
       print('--------------------------------------------------')
       print('Prepare for parsing base font file to ttx...')
       if os.path.exists(base_filename + '.ttx'):
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
     merge_path = argv[1]
     merge_filename, merge_fileext = os.path.splitext(merge_path)
-    if merge_fileext.lower() != 'ttx':
+    if merge_fileext.lower() != '.ttx':
       print('--------------------------------------------------')
       print('Prepare for parsing merge font file to ttx...')
       if os.path.exists(merge_filename + '.ttx'):
