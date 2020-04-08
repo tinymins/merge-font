@@ -13,3 +13,22 @@ In oppsite, you can simplely input command to merge all Simplified Chinese chara
 ```
 python merge-font.py Font-Hant.ttf Font-Hans.ttf zh2Hant output.ttf
 ```
+
+## Options
+
+### --cmap
+
+You can pass `cmap` version list. By default, all version of cmap will be updated during insertion.
+
+```
+--cmap 12
+--cmap 4,12
+```
+
+### --optimize
+
+You can pass `--optimize` if you want to make your font smaller. This option will remove all empty glyphs from cmap list.
+
+## Notice
+
+Some fonts contains to much code point in low versioned cmap list such as `cmap_format_4`. So font merge may got crashed when trying insert new cmap. If you have this kind of problem, try use `--optimize` option and try again. If the problem is still, try use `--cmap` option to pass specific cmap versions and try again.
