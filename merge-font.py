@@ -7,7 +7,7 @@
 '''
 
 import xml.etree.ElementTree as ET
-import copy, sys, os
+import copy, os, argparse
 
 from cp_map import zh2Hans, zh2Hant
 
@@ -129,56 +129,44 @@ def merge_font(base_file, merge_file, merge_cp_map, out_file):
 
   base_tree.write(out_file, xml_declaration=True, encoding="UTF-8")
 
-
 if __name__ == "__main__":
-  try:
-    argv
-  except NameError:
-    argv = sys.argv[1:]
-  else:
-    pass
+  parser = argparse.ArgumentParser(description='Process some integers.')
+  parser.add_argument('base_path', help='path to base font')
+  parser.add_argument('merge_path', help='path to merge font where you want to read font(s) and append to base font')
+  parser.add_argument('mode', choices=['zh2Hans', 'zh2Hant'])
+  parser.add_argument('output_path', help='path to output font')
+  args = parser.parse_args()
 
-  if len(argv) < 3:
-    print('Bad argument, at least 3 arguments requied.')
-    print('Example:')
-    print('    python merge-font.py base.ttf merge.ttf zh2Hans output.ttf')
-    print('    python merge-font.py base.ttf merge.ttf zh2Hant output.ttf')
-  elif argv[2] not in ['zh2Hans', 'zh2Hant']:
-    print('Bad argument, illegal mode. Mode shoud be "zh2Hans" or "zh2Hant"')
-  else:
-    base_path = argv[0]
-    base_filename, base_fileext = os.path.splitext(base_path)
-    if base_fileext.lower() != '.ttx':
-      print('--------------------------------------------------')
-      print('Prepare for parsing base font file to ttx...')
-      if os.path.exists(base_filename + '.ttx'):
-        os.remove(base_filename + '.ttx')
-      os.system('ttx ' + base_path)
-
-    merge_path = argv[1]
-    merge_filename, merge_fileext = os.path.splitext(merge_path)
-    if merge_fileext.lower() != '.ttx':
-      print('--------------------------------------------------')
-      print('Prepare for parsing merge font file to ttx...')
-      if os.path.exists(merge_filename + '.ttx'):
-        os.remove(merge_filename + '.ttx')
-      os.system('ttx ' + merge_path)
-
+  base_filename, base_fileext = os.path.splitext(args.base_path)
+  if base_fileext.lower() != '.ttx':
     print('--------------------------------------------------')
-    print('Prepare for merging font with code point map...')
-    output_path = argv[3]
-    output_filename, output_fileext = os.path.splitext(output_path)
-    if os.path.exists(output_filename + '.ttx'):
-      os.remove(output_filename + '.ttx')
-    if os.path.exists(output_filename + '.ttf'):
-      os.remove(output_filename + '.ttf')
-    merge_font(base_filename + '.ttx', merge_filename + '.ttx', zh2Hans if argv[2] == 'zh2Hant' else zh2Hant, output_filename + '.ttx')
+    print('Prepare for parsing base font file to ttx...')
+    if os.path.exists(base_filename + '.ttx'):
+      os.remove(base_filename + '.ttx')
+    os.system('ttx ' + args.base_path)
 
+  merge_filename, merge_fileext = os.path.splitext(args.merge_path)
+  if merge_fileext.lower() != '.ttx':
     print('--------------------------------------------------')
-    print('Prepare for parsing output font file...')
-    os.system('ttx ' + output_filename + '.ttx')
+    print('Prepare for parsing merge font file to ttx...')
+    if os.path.exists(merge_filename + '.ttx'):
+      os.remove(merge_filename + '.ttx')
+    os.system('ttx ' + args.merge_path)
 
-    print('--------------------------------------------------')
-    print('Finished...')
+  print('--------------------------------------------------')
+  print('Prepare for merging font with code point map...')
+  output_filename, output_fileext = os.path.splitext(args.output_path)
+  if os.path.exists(output_filename + '.ttx'):
+    os.remove(output_filename + '.ttx')
+  if os.path.exists(output_filename + '.ttf'):
+    os.remove(output_filename + '.ttf')
 
-    # merge_font('MengNaYingFuTi.ttx', '蒙纳盈富体简.ttx', zh2Hans, 'out.ttx')
+  cp_map = zh2Hans if args.mode == 'zh2Hant' else zh2Hant
+  merge_font(base_filename + '.ttx', merge_filename + '.ttx', cp_map, output_filename + '.ttx')
+
+  print('--------------------------------------------------')
+  print('Prepare for parsing output font file...')
+  os.system('ttx ' + output_filename + '.ttx')
+
+  print('--------------------------------------------------')
+  print('Finished...')
