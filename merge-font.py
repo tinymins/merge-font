@@ -9,7 +9,7 @@
 import xml.etree.ElementTree as ET
 import copy, os, argparse
 
-from cp_map import zh2Hans, zh2Hant
+from cp_map import Hans, Hant, Hans2Hant, Hant2Hans
 
 MAX_CODE = 0xffff
 
@@ -69,10 +69,8 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, out_file, opt
   for glyph in base_glyph_order.findall('GlyphID'):
     base_glyph_order_max = max(base_glyph_order_max, int(glyph.attrib['id']))
 
-  for dst_code in merge_cp_map:
-    src_code = merge_cp_map[dst_code]
-    if dst_code == src_code:
-      continue
+  for src_code in merge_cp_map:
+    dst_code = merge_cp_map[src_code]
     if dst_code > MAX_CODE:
       continue
     src_code = '%04x' % src_code
@@ -134,7 +132,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Process some integers.')
   parser.add_argument('base_path', help='path to base font')
   parser.add_argument('merge_path', help='path to merge font where you want to read font(s) and append to base font')
-  parser.add_argument('mode', choices=['zh2Hans', 'zh2Hant'])
+  parser.add_argument('mode', choices=['Hans', 'Hant', 'Hans2Hant', 'Hant2Hans'])
   parser.add_argument('output_path', help='path to output font')
   parser.add_argument('--cmap', help='cmap versions (default: all cmaps)', default=range(32))
   parser.add_argument('--optimize', action='store_true', help='optimize font size')
@@ -164,7 +162,14 @@ if __name__ == "__main__":
   if os.path.exists(output_filename + '.ttf'):
     os.remove(output_filename + '.ttf')
 
-  cp_map = zh2Hans if args.mode == 'zh2Hant' else zh2Hant
+  if args.mode == 'Hans':
+    cp_map = Hans
+  elif args.mode == 'Hant':
+    cp_map = Hant
+  elif args.mode == 'Hans2Hant':
+    cp_map = Hans2Hant
+  elif args.mode == 'Hant2Hans':
+    cp_map = Hant2Hans
   merge_font(base_filename + '.ttx', merge_filename + '.ttx', cp_map, args.cmap, output_filename + '.ttx', args.optimize)
 
   print('--------------------------------------------------')

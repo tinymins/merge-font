@@ -6,13 +6,15 @@ Assume that you already got two fonts: Font-Hans.ttf for Simplified Chinese, and
 
 You can simplely input command to merge all Traditional Chinese characters into font file as Simplified Chinese code point:
 ```
-python merge-font.py Font-Hans.ttf Font-Hant.ttf zh2Hans output.ttf
+python merge-font.py Font-Hans.ttf Font-Hant.ttf Hant2Hans output.ttf
 ```
 
 In oppsite, you can simplely input command to merge all Simplified Chinese characters into font file as Traditional Chinese code point:
 ```
-python merge-font.py Font-Hant.ttf Font-Hans.ttf zh2Hant output.ttf
+python merge-font.py Font-Hant.ttf Font-Hans.ttf Hans2Hant output.ttf
 ```
+
+What's more, there are two extra modes `Hans` and `Hant` mode, which means all Simplified/Traditional Chinese characters will be merged to base.
 
 ## Options
 
