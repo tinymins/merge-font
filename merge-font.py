@@ -37,7 +37,7 @@ def remove_child(node, tag, name):
     if c.attrib['name'] == name:
       node.remove(c)
 
-def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, out_file, optimize_size):
+def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exist, out_file, optimize_size):
   base_tree = ET.parse(base_file)
   base_root = base_tree.getroot()
   base_glyf = base_root.find('glyf')
@@ -78,6 +78,8 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, out_file, opt
 
     # check if src code exists in merge ttx
     if src_code not in merge_glyf_dict:
+      continue
+    if dst_code in base_glyf_dict and not overwrite_exist and len(base_glyf_dict[dst_code]) > 0:
       continue
     name = 'uni' + src_code.upper()
     new_name = 'uni' + dst_code.upper()
@@ -135,7 +137,8 @@ if __name__ == "__main__":
   parser.add_argument('mode', choices=['Hans', 'Hant', 'Hans2Hant', 'Hant2Hans'])
   parser.add_argument('output_path', help='path to output font')
   parser.add_argument('--cmap', help='cmap versions (default: all cmaps)', default=range(32))
-  parser.add_argument('--optimize', action='store_true', help='optimize font size')
+  parser.add_argument('--overwrite', action='store_true', help='overwrite exist characters')
+  parser.add_argument('--optimize', action='store_true', help='optimize font file size, remove empty glyph from cmap')
   args = parser.parse_args()
 
   base_filename, base_fileext = os.path.splitext(args.base_path)
@@ -170,7 +173,7 @@ if __name__ == "__main__":
     cp_map = Hans2Hant
   elif args.mode == 'Hant2Hans':
     cp_map = Hant2Hans
-  merge_font(base_filename + '.ttx', merge_filename + '.ttx', cp_map, args.cmap, output_filename + '.ttx', args.optimize)
+  merge_font(base_filename + '.ttx', merge_filename + '.ttx', cp_map, args.cmap, args.overwrite, output_filename + '.ttx', args.optimize)
 
   print('--------------------------------------------------')
   print('Prepare for parsing output font file...')
