@@ -151,6 +151,9 @@ if __name__ == "__main__":
   parser.add_argument('--optimize', action='store_true', help='optimize font file size, remove empty glyph from cmap')
   args = parser.parse_args()
 
+  print('--------------------------------------------------')
+  print('Prepare for merging font %s to %s' % (args.merge_path, args.base_path))
+
   base_filename, base_fileext = os.path.splitext(args.base_path)
   if base_fileext.lower() != '.ttx':
     print('--------------------------------------------------')
@@ -196,4 +199,4 @@ if __name__ == "__main__":
   os.system('ttx ' + output_filename + '.ttx')
 
   print('--------------------------------------------------')
-  print('Finished...')
+  print('Finished with output file %s' % args.output_path)
