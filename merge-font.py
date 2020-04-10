@@ -38,6 +38,10 @@ def remove_child(node, tag, name):
       node.remove(c)
 
 def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exist, out_file, optimize_size):
+  cmap_tags = []
+  for i in cmap_versions:
+    cmap_tags.append('cmap_format_%s' % str(i))
+
   base_tree = ET.parse(base_file)
   base_root = base_tree.getroot()
   base_glyf = base_root.find('glyf')
@@ -68,6 +72,14 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exi
 
   for glyph in base_glyph_order.findall('GlyphID'):
     base_glyph_order_max = max(base_glyph_order_max, int(glyph.attrib['id']))
+
+  base_cmaps = []
+  for cmap in base_cmap.findall('*'):
+    if cmap.tag.startswith('cmap_format_'):
+      if cmap.tag in cmap_tags:
+        base_cmaps.append(cmap)
+      else:
+        base_cmap.remove(cmap)
 
   for src_code in merge_cp_map:
     dst_code = merge_cp_map[src_code]
@@ -104,12 +116,11 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exi
       base_glyph_order_max = base_glyph_order_max + 1
 
     # dealing with cmaps
-    for i in cmap_versions:
-      for cmap in base_cmap.findall('cmap_format_%d' % i):
-        node = ET.Element('map')
-        node.set('code', '0x' + dst_code)
-        node.set('name', new_name)
-        replace_child(cmap, node)
+    for cmap in base_cmaps:
+      node = ET.Element('map')
+      node.set('code', '0x' + dst_code)
+      node.set('name', new_name)
+      replace_child(cmap, node)
 
     # dealing with v and h mtx
     copy_child_to_node(merge_hmtx, 'mtx', name, new_name, base_hmtx)
@@ -120,9 +131,8 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exi
     for glyph in base_glyf.findall('TTGlyph'):
       if len(glyph) == 0 and glyph.attrib['name'] != 'uni0000' and glyph.attrib['name'].startswith('uni'):
         name = glyph.attrib['name']
-        for i in range(32):
-          for cmap in base_cmap.findall('cmap_format_%d' % i):
-            remove_child(cmap, 'map', name)
+        for cmap in base_cmaps:
+          remove_child(cmap, 'map', name)
         # base_glyf.remove(glyph)
         # remove_child(base_hmtx, 'mtx', name)
         # remove_child(base_vmtx, 'mtx', name)
@@ -136,7 +146,7 @@ if __name__ == "__main__":
   parser.add_argument('merge_path', help='path to merge font where you want to read font(s) and append to base font')
   parser.add_argument('mode', choices=['Hans', 'Hant', 'Hans2Hant', 'Hant2Hans'])
   parser.add_argument('output_path', help='path to output font')
-  parser.add_argument('--cmap', help='cmap versions (default: all cmaps)', default=range(32))
+  parser.add_argument('--cmap', help='cmap versions (default: all cmaps)', default='')
   parser.add_argument('--overwrite', action='store_true', help='overwrite exist characters')
   parser.add_argument('--optimize', action='store_true', help='optimize font file size, remove empty glyph from cmap')
   args = parser.parse_args()
@@ -173,7 +183,13 @@ if __name__ == "__main__":
     cp_map = Hans2Hant
   elif args.mode == 'Hant2Hans':
     cp_map = Hant2Hans
-  merge_font(base_filename + '.ttx', merge_filename + '.ttx', cp_map, args.cmap, args.overwrite, output_filename + '.ttx', args.optimize)
+
+  if args.cmap == '':
+    cmap_versions = range(32)
+  else:
+    cmap_versions = args.cmap.split(',')
+
+  merge_font(base_filename + '.ttx', merge_filename + '.ttx', cp_map, cmap_versions, args.overwrite, output_filename + '.ttx', args.optimize)
 
   print('--------------------------------------------------')
   print('Prepare for parsing output font file...')
