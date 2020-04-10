@@ -36,7 +36,7 @@ for i in range(len(__TwoWay[0])):
     hant = ord(__TwoWay[1][i])
     if hans != hant:
         ProcessMapping('Hans2Hant', Hans2Hant, hans, hant)
-        ProcessMapping('Hant2Hans', Hant2Hans, hans, hant)
+        ProcessMapping('Hant2Hans', Hant2Hans, hant, hans)
     ProcessMapping('Hans', Hans, hans, hans)
     ProcessMapping('Hant', Hant, hant, hant)
 
