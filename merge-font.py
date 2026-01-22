@@ -26,6 +26,8 @@ def replace_child(node, child):
     node.append(child)
 
 def copy_child_to_node(node, tag, name, new_name, dst_node):
+  if node is None or dst_node is None:
+    return
   c = find_child(node, tag, name)
   if c is not None:
     c = copy.deepcopy(c)
