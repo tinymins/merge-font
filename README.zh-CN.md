@@ -1,4 +1,4 @@
-# Merge Font - 字体合并工具
+# Font Conv - 字体工具
 
 [English](README.md)
 
