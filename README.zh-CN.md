@@ -169,7 +169,7 @@ python font-conv.py "font.ttf" --mapping Hant2Hans --output "output.ttf" --cmap 
 
 ## 许可证
 
-MIT License
+BSD 3-Clause License
 
 ## 作者
 

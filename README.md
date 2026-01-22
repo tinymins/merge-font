@@ -169,7 +169,7 @@ If the output font file is too large, use the `--optimize` flag to remove empty 
 
 ## License
 
-MIT License
+BSD 3-Clause License
 
 ## Author
 
