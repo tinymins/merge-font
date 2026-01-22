@@ -61,10 +61,10 @@ Suppose you have a font family with separate Traditional (`MyFont-Traditional.tt
 **Step 1: Create a Full version (supports both Simplified and Traditional code points)**
 
 ```bash
-python merge-font.py Hant2Hans "MyFont-Traditional.ttf" -s "MyFont-Simplified.ttf" -o "MyFont-Full.ttf" --cmap 12
+python merge-font.py Hans "MyFont-Traditional.ttf" -s "MyFont-Simplified.ttf" -o "MyFont-Full.ttf" --cmap 12
 ```
 
-This takes the Traditional font as base, and maps Simplified glyphs from the Simplified font to Simplified code points. Result: a font that displays correct glyphs for both Simplified and Traditional text.
+This takes the Traditional font as base, and uses `Hans` preset to copy Simplified glyphs from the Simplified font to Simplified code points. Result: Traditional code points show Traditional glyphs, Simplified code points show Simplified glyphs.
 
 **Step 2: Create a Traditional-style version (Traditional glyphs for all code points)**
 
@@ -72,7 +72,7 @@ This takes the Traditional font as base, and maps Simplified glyphs from the Sim
 python merge-font.py Hant2Hans "MyFont-Full.ttx" -s "MyFont-Traditional.ttx" -o "MyFont-TradStyle.ttf" --overwrite --cmap 12
 ```
 
-This overwrites the Simplified glyphs with Traditional glyphs. Result: a font that always displays Traditional glyphs, even when the text uses Simplified Chinese code points.
+This overwrites the Simplified glyphs with Traditional glyphs (`Hant2Hans` = Traditional glyphs → Simplified code points). Result: a font that always displays Traditional glyphs, even when the text uses Simplified Chinese code points.
 
 | Output | Description | Use Case |
 |--------|-------------|----------|
