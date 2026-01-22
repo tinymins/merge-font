@@ -196,23 +196,25 @@ PRESET_MAP = {
   'Hant2Hans': Hant2Hans,
   'Hans': Hans,
   'Hant': Hant,
+  'None': {},  # No mapping, just convert format
 }
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
-    description='Merge TrueType fonts with Chinese Simplified/Traditional code point mapping.',
+    description='Merge TrueType fonts with Chinese Simplified/Traditional code point mapping, or convert font format.',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog='''
 Examples:
-  %(prog)s Hant2Hans "font.ttf"
-  %(prog)s Hant2Hans "font.ttf" -o "output.ttf"
-  %(prog)s Hant2Hans "base.ttf" -s "source.ttf" -o "merged.ttf"
+  %(prog)s "font.otf" -o "font.ttf"                      # Just convert format
+  %(prog)s "font.ttf" --mapping Hant2Hans                # Apply mapping
+  %(prog)s "font.ttf" --mapping Hant2Hans -o "output.ttf"
+  %(prog)s "base.ttf" -s "source.ttf" --mapping Hans -o "merged.ttf"
 '''
   )
-  parser.add_argument('preset', choices=['Hans2Hant', 'Hant2Hans', 'Hans', 'Hant'],
-                      help='code point mapping preset: Hans2Hant (Simplified->Traditional), Hant2Hans (Traditional->Simplified), Hans/Hant (copy glyphs)')
   parser.add_argument('input', help='path to input font file')
-  parser.add_argument('-o', '--output', dest='output_path', help='path to output font (default: <input>_<preset>.ttf)', default=None)
+  parser.add_argument('-m', '--mapping', dest='mapping', choices=['Hans2Hant', 'Hant2Hans', 'Hans', 'Hant'],
+                      help='code point mapping preset: Hans2Hant (Simplified->Traditional), Hant2Hans (Traditional->Simplified), Hans/Hant (copy glyphs). If not specified, no mapping is applied.', default=None)
+  parser.add_argument('-o', '--output', dest='output_path', help='path to output font (default: <input>_<mapping>.ttf or <input>.ttf)', default=None)
   parser.add_argument('-s', '--source', dest='source_path', help='font file to read glyphs from (default: same as input)', default=None)
   parser.add_argument('--cmap', help='cmap versions to update (default: all). Example: --cmap 4,12', default='')
   parser.add_argument('--overwrite', action='store_true', help='overwrite existing glyphs in base font')
@@ -222,7 +224,10 @@ Examples:
   # Generate default output path based on input filename
   if args.output_path is None:
     input_name, input_ext = os.path.splitext(args.input)
-    args.output_path = '%s_%s%s' % (input_name, args.preset, input_ext if input_ext else '.ttf')
+    if args.mapping:
+      args.output_path = '%s_%s%s' % (input_name, args.mapping, input_ext if input_ext else '.ttf')
+    else:
+      args.output_path = '%s%s' % (input_name, '.ttf' if input_ext.lower() in ['.otf', '.ttx'] else input_ext if input_ext else '.ttf')
 
   # If source_path is not specified, use input (single font conversion mode)
   if args.source_path is None:
@@ -262,10 +267,10 @@ Examples:
   if os.path.exists(output_filename + '.ttf'):
     os.remove(output_filename + '.ttf')
 
-  cp_map = PRESET_MAP[args.preset]
+  cp_map = PRESET_MAP.get(args.mapping, {})
 
   # Check for problematic cmap formats (format 0 only supports 0-255)
-  if args.cmap == '':
+  if args.cmap == '' and args.mapping:
     base_ttx = base_filename + '.ttx'
     problematic_formats = []
     try:
@@ -286,7 +291,8 @@ Examples:
         print('WARNING: Font contains cmap format(s) %s which only support limited character range.' % ', '.join(problematic_formats))
         print('This may cause errors when compiling the output font.')
         print('Please use --cmap 4,12 to avoid this issue.')
-        print('Example: python merge-font.py %s "%s" -o "%s" --cmap 4,12' % (args.preset, args.input, args.output_path))
+        mapping_arg = '--mapping %s ' % args.mapping if args.mapping else ''
+        print('Example: python merge-font.py "%s" %s-o "%s" --cmap 4,12' % (args.input, mapping_arg, args.output_path))
         print('--------------------------------------------------')
         user_input = input('Continue anyway? (y/N): ').strip().lower()
         if user_input != 'y':
