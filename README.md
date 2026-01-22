@@ -22,9 +22,6 @@ A Python tool for merging TrueType fonts with custom code point mapping, specifi
 ```bash
 # Install fonttools for ttx support
 pip install fonttools
-
-# Or use the provided batch file (Windows)
-install-env.bat
 ```
 
 ## Usage

@@ -22,9 +22,6 @@
 ```bash
 # 安装 fonttools 以支持 ttx
 pip install fonttools
-
-# 或使用提供的批处理文件（Windows）
-install-env.bat
 ```
 
 ## 使用方法
