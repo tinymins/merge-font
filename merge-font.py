@@ -142,35 +142,69 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exi
 
   base_tree.write(out_file, xml_declaration=True, encoding="UTF-8")
 
+# Preset name mapping
+PRESET_MAP = {
+  'Hans2Hant': Hans2Hant,
+  'Hant2Hans': Hant2Hans,
+  'Hans': Hans,
+  'Hant': Hant,
+}
+
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Process some integers.')
-  parser.add_argument('base_path', help='path to base font')
-  parser.add_argument('merge_path', help='path to merge font where you want to read font(s) and append to base font')
-  parser.add_argument('mode', choices=['Hans', 'Hant', 'Hans2Hant', 'Hant2Hans'])
-  parser.add_argument('output_path', help='path to output font')
-  parser.add_argument('--cmap', help='cmap versions (default: all cmaps)', default='')
-  parser.add_argument('--overwrite', action='store_true', help='overwrite exist characters')
-  parser.add_argument('--optimize', action='store_true', help='optimize font file size, remove empty glyph from cmap')
+  parser = argparse.ArgumentParser(
+    description='Merge TrueType fonts with Chinese Simplified/Traditional code point mapping.',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog='''
+Examples:
+  %(prog)s Hant2Hans "font.ttf"
+  %(prog)s Hant2Hans "font.ttf" -o "output.ttf"
+  %(prog)s Hant2Hans "base.ttf" -s "source.ttf" -o "merged.ttf"
+'''
+  )
+  parser.add_argument('preset', choices=['Hans2Hant', 'Hant2Hans', 'Hans', 'Hant'],
+                      help='code point mapping preset: Hans2Hant (Simplified->Traditional), Hant2Hans (Traditional->Simplified), Hans/Hant (copy glyphs)')
+  parser.add_argument('input', help='path to input font file')
+  parser.add_argument('-o', '--output', dest='output_path', help='path to output font (default: <input>_<preset>.ttf)', default=None)
+  parser.add_argument('-s', '--source', dest='source_path', help='font file to read glyphs from (default: same as input)', default=None)
+  parser.add_argument('--cmap', help='cmap versions to update (default: all). Example: --cmap 4,12', default='')
+  parser.add_argument('--overwrite', action='store_true', help='overwrite existing glyphs in base font')
+  parser.add_argument('--optimize', action='store_true', help='optimize file size by removing empty glyphs from cmap')
   args = parser.parse_args()
 
-  print('--------------------------------------------------')
-  print('Prepare for merging font %s to %s' % (args.merge_path, args.base_path))
+  # Generate default output path based on input filename
+  if args.output_path is None:
+    input_name, input_ext = os.path.splitext(args.input)
+    args.output_path = '%s_%s%s' % (input_name, args.preset, input_ext if input_ext else '.ttf')
 
-  base_filename, base_fileext = os.path.splitext(args.base_path)
+  # If source_path is not specified, use input (single font conversion mode)
+  if args.source_path is None:
+    args.source_path = args.input
+
+  is_same_source = (args.input == args.source_path)
+
+  if is_same_source:
+    print('--------------------------------------------------')
+    print('Single font conversion mode: %s' % args.input)
+  else:
+    print('--------------------------------------------------')
+    print('Merging glyphs from %s to %s' % (args.source_path, args.input))
+
+  base_filename, base_fileext = os.path.splitext(args.input)
   if base_fileext.lower() != '.ttx':
     print('--------------------------------------------------')
-    print('Prepare for parsing base font file to ttx...')
+    print('Parsing input font to ttx...')
     if os.path.exists(base_filename + '.ttx'):
       os.remove(base_filename + '.ttx')
-    os.system('ttx ' + args.base_path)
+    os.system('ttx ' + args.input)
 
-  merge_filename, merge_fileext = os.path.splitext(args.merge_path)
-  if merge_fileext.lower() != '.ttx':
+  source_filename, source_fileext = os.path.splitext(args.source_path)
+  # Only parse source font if it's different from input font
+  if not is_same_source and source_fileext.lower() != '.ttx':
     print('--------------------------------------------------')
-    print('Prepare for parsing merge font file to ttx...')
-    if os.path.exists(merge_filename + '.ttx'):
-      os.remove(merge_filename + '.ttx')
-    os.system('ttx ' + args.merge_path)
+    print('Parsing source font to ttx...')
+    if os.path.exists(source_filename + '.ttx'):
+      os.remove(source_filename + '.ttx')
+    os.system('ttx ' + args.source_path)
 
   print('--------------------------------------------------')
   print('Prepare for merging font with code point map...')
@@ -180,14 +214,7 @@ if __name__ == "__main__":
   if os.path.exists(output_filename + '.ttf'):
     os.remove(output_filename + '.ttf')
 
-  if args.mode == 'Hans':
-    cp_map = Hans
-  elif args.mode == 'Hant':
-    cp_map = Hant
-  elif args.mode == 'Hans2Hant':
-    cp_map = Hans2Hant
-  elif args.mode == 'Hant2Hans':
-    cp_map = Hant2Hans
+  cp_map = PRESET_MAP[args.preset]
 
   # Check for problematic cmap formats (format 0 only supports 0-255)
   if args.cmap == '':
@@ -211,7 +238,7 @@ if __name__ == "__main__":
         print('WARNING: Font contains cmap format(s) %s which only support limited character range.' % ', '.join(problematic_formats))
         print('This may cause errors when compiling the output font.')
         print('Please use --cmap 4,12 to avoid this issue.')
-        print('Example: python merge-font.py "%s" "%s" %s "%s" --cmap 4,12' % (args.base_path, args.merge_path, args.mode, args.output_path))
+        print('Example: python merge-font.py %s "%s" -o "%s" --cmap 4,12' % (args.preset, args.input, args.output_path))
         print('--------------------------------------------------')
         user_input = input('Continue anyway? (y/N): ').strip().lower()
         if user_input != 'y':
@@ -225,7 +252,7 @@ if __name__ == "__main__":
   else:
     cmap_versions = args.cmap.split(',')
 
-  merge_font(base_filename + '.ttx', merge_filename + '.ttx', cp_map, cmap_versions, args.overwrite, output_filename + '.ttx', args.optimize)
+  merge_font(base_filename + '.ttx', source_filename + '.ttx', cp_map, cmap_versions, args.overwrite, output_filename + '.ttx', args.optimize)
 
   print('--------------------------------------------------')
   print('Prepare for parsing output font file...')

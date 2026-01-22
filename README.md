@@ -1,36 +1,157 @@
-# Merge Font With Code Point Mapping
+# Merge Font
 
-This project is building for merge ttf font file with custom code point mapping. Basicly, it supply two cp-mapping mode: zh2Hans and zh2Hant.
+[中文文档](README.zh-CN.md)
 
-Assume that you already got two fonts: Font-Hans.ttf for Simplified Chinese, and Font-Hant for Traditional Chinese.
+A Python tool for merging TrueType fonts with custom code point mapping, specifically designed for Chinese Simplified/Traditional character conversion.
 
-You can simplely input command to merge all Traditional Chinese characters into font file as Simplified Chinese code point:
+## Features
+
+- **Single Font Conversion**: Convert a font to support displaying Simplified Chinese as Traditional (or vice versa)
+- **Font Merging**: Merge glyphs from one font into another with code point remapping
+- **Multiple Conversion Modes**: Support for various Chinese character mapping modes
+- **Flexible cmap Support**: Control which cmap format versions to update
+
+## Requirements
+
+- Python 3.7+
+- [fonttools](https://github.com/fonttools/fonttools) (for ttx command)
+
+## Installation
+
+```bash
+# Install fonttools for ttx support
+pip install fonttools
+
+# Or use the provided batch file (Windows)
+install-env.bat
 ```
-python merge-font.py Font-Hans.ttf Font-Hant.ttf Hant2Hans output.ttf
+
+## Usage
+
+### Single Font Conversion (Recommended)
+
+Convert a single font to support Simplified ↔ Traditional Chinese mapping:
+
+```bash
+python merge-font.py <preset> <input_font> [-o output_font]
 ```
 
-In oppsite, you can simplely input command to merge all Simplified Chinese characters into font file as Traditional Chinese code point:
-```
-python merge-font.py Font-Hant.ttf Font-Hans.ttf Hans2Hant output.ttf
+**Example**: Convert a Traditional Chinese font to display Traditional glyphs when Simplified code points are used:
+
+```bash
+# Minimal usage (outputs to MyFont-Traditional_Hant2Hans.ttf)
+python merge-font.py Hant2Hans "MyFont-Traditional.ttf"
+
+# With custom output path
+python merge-font.py Hant2Hans "MyFont-Traditional.ttf" -o "MyFont-TradStyle.ttf"
 ```
 
-What's more, there are two extra modes `Hans` and `Hant` mode, which means all Simplified/Traditional Chinese characters will be merged to base.
+### Font Merging Mode
+
+Merge glyphs from one font into another:
+
+```bash
+python merge-font.py <preset> <base_font> -s <source_font> [-o output_font]
+```
+
+### Real-World Example: Creating Full CJK Support Font
+
+Suppose you have a font family with separate Traditional (`MyFont-Traditional.ttf`) and Simplified (`MyFont-Simplified.ttf`) versions. Here's how to create different output variants:
+
+**Step 1: Create a Full version (supports both Simplified and Traditional code points)**
+
+```bash
+python merge-font.py Hant2Hans "MyFont-Traditional.ttf" -s "MyFont-Simplified.ttf" -o "MyFont-Full.ttf" --cmap 12
+```
+
+This takes the Traditional font as base, and maps Simplified glyphs from the Simplified font to Simplified code points. Result: a font that displays correct glyphs for both Simplified and Traditional text.
+
+**Step 2: Create a Traditional-style version (Traditional glyphs for all code points)**
+
+```bash
+python merge-font.py Hant2Hans "MyFont-Full.ttx" -s "MyFont-Traditional.ttx" -o "MyFont-TradStyle.ttf" --overwrite --cmap 12
+```
+
+This overwrites the Simplified glyphs with Traditional glyphs. Result: a font that always displays Traditional glyphs, even when the text uses Simplified Chinese code points.
+
+| Output | Description | Use Case |
+|--------|-------------|----------|
+| `MyFont-Full.ttf` | Simplified → Simplified glyph, Traditional → Traditional glyph | Standard CJK support |
+| `MyFont-TradStyle.ttf` | All code points → Traditional glyphs | Users who prefer Traditional style on Simplified Chinese systems |
+
+## Presets
+
+| Preset | Description |
+|--------|-------------|
+| `Hans2Hant` | Map Simplified Chinese glyphs → Traditional Chinese code points |
+| `Hant2Hans` | Map Traditional Chinese glyphs → Simplified Chinese code points |
+| `Hans` | Copy all Simplified Chinese glyphs to base font |
+| `Hant` | Copy all Traditional Chinese glyphs to base font |
+
+### Use Cases
+
+- **`Hant2Hans`**: When you have a Traditional Chinese font and want it to display Traditional glyphs even when the text uses Simplified Chinese code points
+- **`Hans2Hant`**: When you have a Simplified Chinese font and want it to display Simplified glyphs even when the text uses Traditional Chinese code points
 
 ## Options
 
-### --cmap
+### `-o, --output <font_path>`
 
-You can pass `cmap` version list. By default, all version of cmap will be updated during insertion.
+Specify the output font path. If not provided, defaults to `<input>_<preset>.ttf`.
 
-```
+### `-s, --source <font_path>`
+
+Specify the font file to read glyphs from. If not provided, the input font is used as both source and target.
+
+### `--cmap <versions>`
+
+Specify which cmap format versions to update. By default, all cmap formats are processed.
+
+```bash
+# Update only cmap format 12
 --cmap 12
+
+# Update cmap formats 4 and 12
 --cmap 4,12
 ```
 
-### --optimize
+### `--overwrite`
 
-You can pass `--optimize` if you want to make your font smaller. This option will remove all empty glyphs from cmap list.
+Overwrite existing glyphs in the base font. By default, existing non-empty glyphs are preserved.
 
-## Notice
+### `--optimize`
 
-Some fonts contains to much code point in low versioned cmap list such as `cmap_format_4`. So font merge may got crashed when trying insert new cmap. If you have this kind of problem, try use `--optimize` option and try again. If the problem is still, try use `--cmap` option to pass specific cmap versions and try again.
+Remove empty glyphs from cmap tables to reduce file size and avoid potential format limitations.
+
+## Troubleshooting
+
+### cmap Format Errors
+
+Some fonts contain cmap formats (like `cmap_format_0`, `cmap_format_2`, `cmap_format_6`) that only support limited character ranges. If you encounter errors during compilation:
+
+1. Use the `--cmap 4,12` option to only update supported formats
+2. Use the `--optimize` option to remove empty glyphs
+
+```bash
+python merge-font.py Hant2Hans "font.ttf" -o "output.ttf" --cmap 4,12 --optimize
+```
+
+### Large Font Files
+
+If the output font file is too large, use the `--optimize` flag to remove empty glyph entries from cmap tables.
+
+## How It Works
+
+1. **Parse Fonts**: Convert TTF files to TTX (XML format) using fonttools
+2. **Build Glyph Dictionary**: Index glyphs by their Unicode code points
+3. **Apply Mapping**: Copy glyphs from source font to target code points based on the selected mode
+4. **Update Tables**: Update glyf, cmap, hmtx, vmtx, and GlyphOrder tables
+5. **Compile Output**: Convert the modified TTX back to TTF format
+
+## License
+
+MIT License
+
+## Author
+
+Emil Zhai
