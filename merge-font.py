@@ -54,23 +54,49 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exi
   base_glyph_order_max = 0
   base_glyf_dict = {}
 
+  # Check if this is a CFF font (OTF) instead of TTF
+  base_cff = base_root.find('CFF')
+  is_cff_font = base_cff is not None
+
   merge_tree = ET.parse(merge_file)
   merge_root = merge_tree.getroot()
   merge_glyf = merge_root.find('glyf')
   merge_cmap = merge_root.find('cmap')
   merge_hmtx = merge_root.find('hmtx')
   merge_vmtx = merge_root.find('vmtx')
+  merge_cff = merge_root.find('CFF')
   merge_glyf_dict = {}
 
-  for glyph in base_glyf.findall('TTGlyph'):
-    name = glyph.attrib['name'].lower()
-    if name.startswith('uni'):
-      base_glyf_dict[name[3:]] = glyph
+  # For CFF fonts, we need to build a mapping from unicode code point to glyph name via cmap
+  if is_cff_font:
+    # Build cmap lookup: code -> glyph name
+    merge_cmap_dict = {}
+    base_cmap_dict = {}
+    for cmap_table in merge_cmap.findall('*'):
+      if cmap_table.tag.startswith('cmap_format_'):
+        for map_entry in cmap_table.findall('map'):
+          code = map_entry.attrib['code'].lower()
+          if code.startswith('0x'):
+            code = code[2:]
+          merge_cmap_dict[code] = map_entry.attrib['name']
+    for cmap_table in base_cmap.findall('*'):
+      if cmap_table.tag.startswith('cmap_format_'):
+        for map_entry in cmap_table.findall('map'):
+          code = map_entry.attrib['code'].lower()
+          if code.startswith('0x'):
+            code = code[2:]
+          base_cmap_dict[code] = map_entry.attrib['name']
+  else:
+    # TTF font: use glyf table
+    for glyph in base_glyf.findall('TTGlyph'):
+      name = glyph.attrib['name'].lower()
+      if name.startswith('uni'):
+        base_glyf_dict[name[3:]] = glyph
 
-  for glyph in merge_glyf.findall('TTGlyph'):
-    name = glyph.attrib['name'].lower()
-    if name.startswith('uni'):
-      merge_glyf_dict[name[3:]] = glyph
+    for glyph in merge_glyf.findall('TTGlyph'):
+      name = glyph.attrib['name'].lower()
+      if name.startswith('uni'):
+        merge_glyf_dict[name[3:]] = glyph
 
   for glyph in base_glyph_order.findall('GlyphID'):
     base_glyph_order_max = max(base_glyph_order_max, int(glyph.attrib['id']))
@@ -87,49 +113,71 @@ def merge_font(base_file, merge_file, merge_cp_map, cmap_versions, overwrite_exi
     dst_code = merge_cp_map[src_code]
     if dst_code > MAX_CODE:
       continue
-    src_code = '%04x' % src_code
-    dst_code = '%04x' % dst_code
+    src_code_hex = '%04x' % src_code
+    dst_code_hex = '%04x' % dst_code
 
-    # check if src code exists in merge ttx
-    if src_code not in merge_glyf_dict:
-      continue
-    if dst_code in base_glyf_dict and not overwrite_exist and len(base_glyf_dict[dst_code]) > 0:
-      continue
-    name = 'uni' + src_code.upper()
-    new_name = 'uni' + dst_code.upper()
+    if is_cff_font:
+      # CFF font: update cmap to point dst code to the same glyph as src code
+      if src_code_hex not in merge_cmap_dict:
+        continue
+      src_glyph_name = merge_cmap_dict[src_code_hex]
 
-    # dealing with glyph
-    glyf = copy.deepcopy(merge_glyf_dict[src_code])
-    glyf.set('name', new_name)
-    if dst_code in base_glyf_dict:
-      # if dst code exists in base ttx, just replace its glyph
-      base_glyf_dict[dst_code].clear()
-      base_glyf_dict[dst_code].attrib = glyf.attrib
-      for c in glyf:
-        base_glyf_dict[dst_code].append(c)
+      # Check if dst code already has a glyph and we shouldn't overwrite
+      if dst_code_hex in base_cmap_dict and not overwrite_exist:
+        continue
+
+      # Update all cmap tables to map dst_code to src_glyph_name
+      for cmap in base_cmaps:
+        node = ET.Element('map')
+        node.set('code', '0x' + dst_code_hex)
+        node.set('name', src_glyph_name)
+        replace_child(cmap, node)
+
+      # Copy hmtx/vmtx if needed (use original glyph name)
+      copy_child_to_node(merge_hmtx, 'mtx', src_glyph_name, src_glyph_name, base_hmtx)
+      copy_child_to_node(merge_vmtx, 'mtx', src_glyph_name, src_glyph_name, base_vmtx)
     else:
-      # or create new glyph and append it
-      base_glyf.append(glyf)
-      base_glyf_dict[dst_code] = glyf
-      glyph_order = ET.Element('GlyphID')
-      glyph_order.set('id', str(base_glyph_order_max + 1))
-      glyph_order.set('name', new_name)
-      base_glyph_order.append(glyph_order)
-      base_glyph_order_max = base_glyph_order_max + 1
+      # TTF font: original logic
+      # check if src code exists in merge ttx
+      if src_code_hex not in merge_glyf_dict:
+        continue
+      if dst_code_hex in base_glyf_dict and not overwrite_exist and len(base_glyf_dict[dst_code_hex]) > 0:
+        continue
+      name = 'uni' + src_code_hex.upper()
+      new_name = 'uni' + dst_code_hex.upper()
 
-    # dealing with cmaps
-    for cmap in base_cmaps:
-      node = ET.Element('map')
-      node.set('code', '0x' + dst_code)
-      node.set('name', new_name)
-      replace_child(cmap, node)
+      # dealing with glyph
+      glyf = copy.deepcopy(merge_glyf_dict[src_code_hex])
+      glyf.set('name', new_name)
+      if dst_code_hex in base_glyf_dict:
+        # if dst code exists in base ttx, just replace its glyph
+        base_glyf_dict[dst_code_hex].clear()
+        base_glyf_dict[dst_code_hex].attrib = glyf.attrib
+        for c in glyf:
+          base_glyf_dict[dst_code_hex].append(c)
+      else:
+        # or create new glyph and append it
+        base_glyf.append(glyf)
+        base_glyf_dict[dst_code_hex] = glyf
+        glyph_order = ET.Element('GlyphID')
+        glyph_order.set('id', str(base_glyph_order_max + 1))
+        glyph_order.set('name', new_name)
+        base_glyph_order.append(glyph_order)
+        base_glyph_order_max = base_glyph_order_max + 1
 
-    # dealing with v and h mtx
-    copy_child_to_node(merge_hmtx, 'mtx', name, new_name, base_hmtx)
-    copy_child_to_node(merge_vmtx, 'mtx', name, new_name, base_vmtx)
+      # dealing with cmaps
+      for cmap in base_cmaps:
+        node = ET.Element('map')
+        node.set('code', '0x' + dst_code_hex)
+        node.set('name', new_name)
+        replace_child(cmap, node)
+
+      # dealing with v and h mtx
+      copy_child_to_node(merge_hmtx, 'mtx', name, new_name, base_hmtx)
+      copy_child_to_node(merge_vmtx, 'mtx', name, new_name, base_vmtx)
 
   # remove empty glyphs, because some cmap only supports max length 65535
-  if optimize_size:
+  if optimize_size and not is_cff_font:
     for glyph in base_glyf.findall('TTGlyph'):
       if len(glyph) == 0 and glyph.attrib['name'] != 'uni0000' and glyph.attrib['name'].startswith('uni'):
         name = glyph.attrib['name']
@@ -256,7 +304,7 @@ Examples:
 
   print('--------------------------------------------------')
   print('Prepare for parsing output font file...')
-  os.system('ttx ' + output_filename + '.ttx')
+  os.system('ttx -o "%s" "%s"' % (args.output_path, output_filename + '.ttx'))
 
   print('--------------------------------------------------')
   print('Finished with output file %s' % args.output_path)
