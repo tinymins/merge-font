@@ -189,6 +189,37 @@ if __name__ == "__main__":
   elif args.mode == 'Hant2Hans':
     cp_map = Hant2Hans
 
+  # Check for problematic cmap formats (format 0 only supports 0-255)
+  if args.cmap == '':
+    base_ttx = base_filename + '.ttx'
+    problematic_formats = []
+    try:
+      import xml.etree.ElementTree as ET
+      tree = ET.parse(base_ttx)
+      root = tree.getroot()
+      cmap = root.find('cmap')
+      if cmap is not None:
+        for child in cmap:
+          if child.tag == 'cmap_format_0':
+            problematic_formats.append('0')
+          elif child.tag == 'cmap_format_2':
+            problematic_formats.append('2')
+          elif child.tag == 'cmap_format_6':
+            problematic_formats.append('6')
+      if problematic_formats:
+        print('--------------------------------------------------')
+        print('WARNING: Font contains cmap format(s) %s which only support limited character range.' % ', '.join(problematic_formats))
+        print('This may cause errors when compiling the output font.')
+        print('Please use --cmap 4,12 to avoid this issue.')
+        print('Example: python merge-font.py "%s" "%s" %s "%s" --cmap 4,12' % (args.base_path, args.merge_path, args.mode, args.output_path))
+        print('--------------------------------------------------')
+        user_input = input('Continue anyway? (y/N): ').strip().lower()
+        if user_input != 'y':
+          print('Aborted.')
+          exit(1)
+    except Exception as e:
+      pass  # If check fails, continue anyway
+
   if args.cmap == '':
     cmap_versions = range(32)
   else:
