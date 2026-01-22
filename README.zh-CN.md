@@ -34,17 +34,17 @@ install-env.bat
 在 OTF 和 TTF 格式之间转换，不进行任何字符映射：
 
 ```bash
-python merge-font.py <输入字体> [--output 输出字体]
+python font-conv.py <输入字体> [--output 输出字体]
 ```
 
 **示例**：
 
 ```bash
 # 将 OTF 转换为 TTF
-python merge-font.py "我的字体.otf" --output "我的字体.ttf"
+python font-conv.py "我的字体.otf" --output "我的字体.ttf"
 
 # 带 cmap 过滤的转换
-python merge-font.py "我的字体.otf" --output "我的字体.ttf" --cmap 4,12
+python font-conv.py "我的字体.otf" --output "我的字体.ttf" --cmap 4,12
 ```
 
 ### 带映射的单字体转换
@@ -52,17 +52,17 @@ python merge-font.py "我的字体.otf" --output "我的字体.ttf" --cmap 4,12
 将单个字体转换为支持简繁映射：
 
 ```bash
-python merge-font.py <输入字体> --mapping <预设> [--output 输出字体]
+python font-conv.py <输入字体> --mapping <预设> [--output 输出字体]
 ```
 
 **示例**：将繁体中文字体转换为在使用简体码点时显示繁体字形：
 
 ```bash
 # 最简用法（输出到 我的字体·繁体_Hant2Hans.ttf）
-python merge-font.py "我的字体·繁体.ttf" --mapping Hant2Hans
+python font-conv.py "我的字体·繁体.ttf" --mapping Hant2Hans
 
 # 指定输出路径
-python merge-font.py "我的字体·繁体.ttf" --mapping Hant2Hans --output "我的字体·繁体风格.ttf"
+python font-conv.py "我的字体·繁体.ttf" --mapping Hant2Hans --output "我的字体·繁体风格.ttf"
 ```
 
 ### 字体合并模式
@@ -70,7 +70,7 @@ python merge-font.py "我的字体·繁体.ttf" --mapping Hant2Hans --output "�
 将一个字体的字形合并到另一个字体：
 
 ```bash
-python merge-font.py <基础字体> --source <源字体> --mapping <预设> [--output 输出字体]
+python font-conv.py <基础字体> --source <源字体> --mapping <预设> [--output 输出字体]
 ```
 
 ### 实战示例：创建简繁全支持字体
@@ -80,7 +80,7 @@ python merge-font.py <基础字体> --source <源字体> --mapping <预设> [--o
 **第一步：创建完整版（简繁码点都支持）**
 
 ```bash
-python merge-font.py "我的字体·繁体.ttf" --source "我的字体·简体.ttf" --mapping Hans --output "我的字体·简繁全支持.ttf" --cmap 12
+python font-conv.py "我的字体·繁体.ttf" --source "我的字体·简体.ttf" --mapping Hans --output "我的字体·简繁全支持.ttf" --cmap 12
 ```
 
 这将繁体字体作为基础，使用 `Hans` 预设把简体字体中的简体字形复制到简体码点。结果：繁体码点显示繁体字形，简体码点显示简体字形。
@@ -88,7 +88,7 @@ python merge-font.py "我的字体·繁体.ttf" --source "我的字体·简体.t
 **第二步：创建繁体风格版（所有码点都显示繁体字形）**
 
 ```bash
-python merge-font.py "我的字体·简繁全支持.ttx" --source "我的字体·繁体.ttx" --mapping Hant2Hans --output "我的字体·简体码点显示繁体字形.ttf" --overwrite --cmap 12
+python font-conv.py "我的字体·简繁全支持.ttx" --source "我的字体·繁体.ttx" --mapping Hant2Hans --output "我的字体·简体码点显示繁体字形.ttf" --overwrite --cmap 12
 ```
 
 这将简体码点的字形覆盖为繁体字形（`Hant2Hans` = 繁体字形 → 简体码点）。结果：无论文本是简体还是繁体码点，都显示繁体字形。
@@ -155,7 +155,7 @@ python merge-font.py "我的字体·简繁全支持.ttx" --source "我的字体�
 2. 使用 `--optimize` 选项移除空字形
 
 ```bash
-python merge-font.py "font.ttf" --mapping Hant2Hans --output "output.ttf" --cmap 4,12 --optimize
+python font-conv.py "font.ttf" --mapping Hant2Hans --output "output.ttf" --cmap 4,12 --optimize
 ```
 
 ### 输出文件过大

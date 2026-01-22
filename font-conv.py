@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-    File name: merge-font.py
+    File name: font-conv.py
     Author: Emil Zhai
     Python Version: 3.7
 '''
@@ -292,7 +292,7 @@ Examples:
         print('This may cause errors when compiling the output font.')
         print('Please use --cmap 4,12 to avoid this issue.')
         mapping_arg = '--mapping %s ' % args.mapping if args.mapping else ''
-        print('Example: python merge-font.py "%s" %s-o "%s" --cmap 4,12' % (args.input, mapping_arg, args.output_path))
+        print('Example: python font-conv.py "%s" %s-o "%s" --cmap 4,12' % (args.input, mapping_arg, args.output_path))
         print('--------------------------------------------------')
         user_input = input('Continue anyway? (y/N): ').strip().lower()
         if user_input != 'y':

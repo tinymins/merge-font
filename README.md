@@ -34,17 +34,17 @@ install-env.bat
 Convert between OTF and TTF formats without any character mapping:
 
 ```bash
-python merge-font.py <input_font> [--output output_font]
+python font-conv.py <input_font> [--output output_font]
 ```
 
 **Examples**:
 
 ```bash
 # Convert OTF to TTF
-python merge-font.py "MyFont.otf" --output "MyFont.ttf"
+python font-conv.py "MyFont.otf" --output "MyFont.ttf"
 
 # Convert with cmap filtering
-python merge-font.py "MyFont.otf" --output "MyFont.ttf" --cmap 4,12
+python font-conv.py "MyFont.otf" --output "MyFont.ttf" --cmap 4,12
 ```
 
 ### Single Font Conversion with Mapping
@@ -52,17 +52,17 @@ python merge-font.py "MyFont.otf" --output "MyFont.ttf" --cmap 4,12
 Convert a single font to support Simplified ↔ Traditional Chinese mapping:
 
 ```bash
-python merge-font.py <input_font> --mapping <preset> [--output output_font]
+python font-conv.py <input_font> --mapping <preset> [--output output_font]
 ```
 
 **Example**: Convert a Traditional Chinese font to display Traditional glyphs when Simplified code points are used:
 
 ```bash
 # Minimal usage (outputs to MyFont-Traditional_Hant2Hans.ttf)
-python merge-font.py "MyFont-Traditional.ttf" --mapping Hant2Hans
+python font-conv.py "MyFont-Traditional.ttf" --mapping Hant2Hans
 
 # With custom output path
-python merge-font.py "MyFont-Traditional.ttf" --mapping Hant2Hans --output "MyFont-TradStyle.ttf"
+python font-conv.py "MyFont-Traditional.ttf" --mapping Hant2Hans --output "MyFont-TradStyle.ttf"
 ```
 
 ### Font Merging Mode
@@ -70,7 +70,7 @@ python merge-font.py "MyFont-Traditional.ttf" --mapping Hant2Hans --output "MyFo
 Merge glyphs from one font into another:
 
 ```bash
-python merge-font.py <base_font> --source <source_font> --mapping <preset> [--output output_font]
+python font-conv.py <base_font> --source <source_font> --mapping <preset> [--output output_font]
 ```
 
 ### Real-World Example: Creating Full CJK Support Font
@@ -80,7 +80,7 @@ Suppose you have a font family with separate Traditional (`MyFont-Traditional.tt
 **Step 1: Create a Full version (supports both Simplified and Traditional code points)**
 
 ```bash
-python merge-font.py "MyFont-Traditional.ttf" --source "MyFont-Simplified.ttf" --mapping Hans --output "MyFont-Full.ttf" --cmap 12
+python font-conv.py "MyFont-Traditional.ttf" --source "MyFont-Simplified.ttf" --mapping Hans --output "MyFont-Full.ttf" --cmap 12
 ```
 
 This takes the Traditional font as base, and uses `Hans` preset to copy Simplified glyphs from the Simplified font to Simplified code points. Result: Traditional code points show Traditional glyphs, Simplified code points show Simplified glyphs.
@@ -88,7 +88,7 @@ This takes the Traditional font as base, and uses `Hans` preset to copy Simplifi
 **Step 2: Create a Traditional-style version (Traditional glyphs for all code points)**
 
 ```bash
-python merge-font.py "MyFont-Full.ttx" --source "MyFont-Traditional.ttx" --mapping Hant2Hans --output "MyFont-TradStyle.ttf" --overwrite --cmap 12
+python font-conv.py "MyFont-Full.ttx" --source "MyFont-Traditional.ttx" --mapping Hant2Hans --output "MyFont-TradStyle.ttf" --overwrite --cmap 12
 ```
 
 This overwrites the Simplified glyphs with Traditional glyphs (`Hant2Hans` = Traditional glyphs → Simplified code points). Result: a font that always displays Traditional glyphs, even when the text uses Simplified Chinese code points.
@@ -155,7 +155,7 @@ Some fonts contain cmap formats (like `cmap_format_0`, `cmap_format_2`, `cmap_fo
 2. Use the `--optimize` option to remove empty glyphs
 
 ```bash
-python merge-font.py "font.ttf" --mapping Hant2Hans --output "output.ttf" --cmap 4,12 --optimize
+python font-conv.py "font.ttf" --mapping Hant2Hans --output "output.ttf" --cmap 4,12 --optimize
 ```
 
 ### Large Font Files
